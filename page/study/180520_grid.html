@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>grid_study</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+    color: #fff;
+    font-size: 13px;
+    margin: 10px 7px;
+    text-align: center;
+}
+.wrapper {
+    display: grid;
+    /* grid-template-columns: 100px ... 100px; */    
+    /* grid-gap: 10px; */
+    /* line-height: 100px; */
+}
+.grid {
+    border-radius: 5px;
+    /* grid-column-start: 1; */
+    /* grid-column-end: 3; */
+}
+.grid:hover {
+    opacity: 0.5;
+}
+</style>
+
+</head>
+<body>
+
+<script>
+// 180520:memo
+// 結局flexを使わなかった…(responsiveでもないしw)
+// gridの使い道は基本間違っている気がするw
+// ゲームで使えそうだがcanvasでないところが残念
+
+window.addEventListener("load", function() {
+    var emojiArr = ["_(:3｣ ∠)_","ヽ( ´￢`)ﾉ","(๑•̀ㅂ•́)و✧","(◍•ᴗ•◍) ","(☍﹏⁰)｡","٩(╹⌓╹ )۶","(ㆁᴗㆁ✿)","ヾ(´ε｀*)ゝ","(*´˘`*)♪","(´•ω•`)","◝(⁰▿⁰)◜","( ꒪⌓꒪)","(ง `ω´)ง ","٩(๑òωó๑)۶","( つ•̀ω•́)"];
+    var colorArr = ["#d06da3","#c2d3ed","#be91bc","#c73576","#f8e352","#c8d627","#e3b3cd","#c6e0d5","#e4ab5a","#cb6c58","#845d9e","#82c0cd"];
+
+    var largeGridPercentage = 0.25; //largeSizeの確率
+    //var gridSize = 100;
+    //var gapSize = 10;
+    var horizonCnt = parseInt(document.body.clientWidth / 80 / 1.1); //1行のgrid個数
+    var gridSize = document.body.clientWidth / (horizonCnt * 1.1 - 0.1);
+    var gapSize = gridSize * 0.1;
+    var wrapperHeight = Math.min(window.innerHeight, 1000);
+    //var horizonCnt = parseInt((document.body.clientWidth + gapSize) / (gridSize + gapSize));
+    var verticalCnt = parseInt((wrapperHeight - gapSize) / (gridSize + gapSize));
+
+    var wrapper = document.createElement("div");
+    wrapper.setAttribute("class", "wrapper");
+    document.body.appendChild(wrapper);
+
+    var gridTemplateColumns = "";
+    for(var i=0; i<horizonCnt; i++) {
+        gridTemplateColumns += " " + gridSize + "px";
+    }
+    wrapper.style["grid-template-columns"] = gridTemplateColumns;
+    wrapper.style["line-height"] = gridSize + "px";
+    wrapper.style["grid-gap"] = gapSize + "px";
+
+    var largeGrid = [[]];
+    var gridCnt = horizonCnt * verticalCnt;
+
+    for(var i=0; i<horizonCnt; i++) {
+        largeGrid.push([]);
+        for(var j=0; j<verticalCnt; j++) {
+            if(gridCnt <= 0) return false;
+            gridCnt--;
+
+            var grid = document.createElement("div");
+            grid.setAttribute("class", "grid");
+            grid.style["background-color"] = colorArr[parseInt(Math.random() * colorArr.length)];
+            grid.innerHTML = emojiArr[parseInt(Math.random() * emojiArr.length)];
+
+            var bool1 = Math.random() < largeGridPercentage; //largeの確率
+            var bool2 = verticalCnt - j > 1; //最後の1行はダメ
+            var bool3 = !largeGrid[i][j]; //既存のlargeと被っちゃダメ
+            var bool4 = gridCnt >= 3; //gridの個数は限られている
+
+            if(bool1 && bool2 && bool3 && bool4) {
+                gridCnt -= 3;
+                largeGrid[i+1][j] = largeGrid[i][j+1] = largeGrid[i+1][j+1] = 1;
+                if(j) largeGrid[i+1][j-1] = 1;
+                
+                grid.style["grid-column-start"] = i + 1;
+                grid.style["grid-column-end"] = i + 3;
+                grid.style["grid-row-start"] = j + 1;
+                grid.style["grid-row-end"] = j + 3;
+                grid.style["line-height"] = gridSize * 2 + "px";
+            }
+            wrapper.appendChild(grid);
+        }
+    }
+});
+
+</script>
+
+</body>
+</html>
