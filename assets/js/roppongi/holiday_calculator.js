@@ -1,5 +1,7 @@
 $(function(){
     //JSONのGETメソッドを試してみよう！
+    //まさかの失敗でした...（泣
+    /*
     $.getJSON("/assets/json/roppongi/holiday.json")
     .done(function(json){
         showHoliday(json);
@@ -7,6 +9,9 @@ $(function(){
     .fail(function(jqxhr, textStatus, error){
         document.write("Request Failed: " + textStatus + ", " + error);
     });
+    */
+
+    showHoliday(holidayArr);
 
     function showHoliday(holidayArr) {
         var now = new Date().getTime();
