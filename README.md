@@ -11,3 +11,4 @@ try to create my first site on github
 ## canvas pattern
 
 ## game
+- [pixi exercise: treasure hunter](https://lycopene233.github.io/firstsite/page/game/180715_treasure_hunter.html)

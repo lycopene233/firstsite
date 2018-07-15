@@ -1,0 +1,263 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>20180715_pixi_treasure_hunter</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="text/javascript" src="../../assets/js/lib//jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="../../assets/js/lib/pixi.js"></script>
+<script type="text/javascript" src="../../assets/js/pixi/helpful_functions.js"></script>
+</head>
+<body>
+	Use keyboard(↑→↓←) to send the treasure chest to the door while staying away from the blobs!<br><br>
+
+<script>
+
+let Application = PIXI.Application,
+    loader = PIXI.loader,
+    resources = PIXI.loader.resources,
+    TextureCache = PIXI.utils.TextureCache,
+    Sprite = PIXI.Sprite,
+    Container = PIXI.Container,
+
+    Graphics = PIXI.Graphics,
+    Rectangle = PIXI.Rectangle,
+    Text = PIXI.Text,
+    TextStyle = PIXI.TextStyle;
+
+let app = new Application({
+	width: 512,
+	height: 512,
+	antialias: true,
+	//transparent: true,
+}); 
+document.body.appendChild(app.view);
+
+let jsonFile = "../../img/pixi/treasureHunter/treasureHunter.json";
+
+loader
+	.add(jsonFile)
+	.load(setup);
+
+let state, explorer, treasure, blobs, chimes, exit, player, dungeon,
+    door, healthBar, message, gameScene, gameOverScene, enemies, id;
+
+function setup(){
+	//Create the `gameScene` group
+	//Create the `dungeon` sprite
+	//Create the `door` sprite
+	//Create the `player` sprite
+	//Create the `treasure` sprite
+	//Make the enemies
+	//Create the health bar
+
+	//Create a `gameOverScene` group
+	//Add some text for the game over message
+
+	//Assign the player's keyboard controllers
+	//set the game state to `play`
+	//Start the game loop
+
+	gameScene = new Container();
+	//gameScene.visible = false;
+	app.stage.addChild(gameScene);
+
+	gameOverScene = new Container();
+	gameOverScene.visible = false;
+	app.stage.addChild(gameOverScene);
+
+
+	id = resources[jsonFile].textures;
+
+	dungeon = new Sprite(id["dungeon.png"]);
+	gameScene.addChild(dungeon);
+
+	door = new Sprite(id["door.png"]);
+	door.position.set(32, 0);
+	gameScene.addChild(door);
+
+	explorer = new Sprite(id["explorer.png"]);
+	explorer.x = 68;
+	explorer.y = gameScene.height / 2 - explorer.height / 2;
+	explorer.vx = 0;
+	explorer.vy = 0;
+	gameScene.addChild(explorer);
+
+	treasure = new Sprite(id["treasure.png"]);
+	treasure.x = gameScene.width - treasure.width - 48;
+	treasure.y = gameScene.height / 2 - treasure.height / 2;
+	gameScene.addChild(treasure);
+
+	let numberOfBlobs = 6,
+    	spacing = 48,
+    	xOffset = 150,
+    	speed = 2,
+    	direction = 1;
+
+    blobs = [];
+	for (let i = 0; i < numberOfBlobs; i++) {
+		let blob = new Sprite(id["blob.png"]);
+		let x = spacing * i + xOffset;
+		let y = randomInt(0, app.stage.height - blob.height);
+		blob.x = x;
+		blob.y = y;
+		blob.vy = speed * direction;
+		direction *= -1;
+		blobs.push(blob);
+		gameScene.addChild(blob);
+	}
+
+
+	healthBar = new PIXI.Container();
+	healthBar.position.set(app.stage.width - 170, 4)
+	gameScene.addChild(healthBar);
+
+	let innerBar = new PIXI.Graphics();
+	innerBar.beginFill(0x000000);
+	innerBar.drawRect(0, 0, 128, 8);
+	innerBar.endFill();
+	healthBar.addChild(innerBar);
+
+	let outerBar = new PIXI.Graphics();
+	outerBar.beginFill(0xFF3300);
+	outerBar.drawRect(0, 0, 128, 8);
+	outerBar.endFill();
+	healthBar.addChild(outerBar);
+
+	healthBar.outer = outerBar;
+
+
+	let style = new TextStyle({
+		fontFamily: "Futura",
+		fontSize: 64,
+		fill: "white"
+	});
+	message = new Text("The End!", style);
+	message.x = 120;
+	message.y = app.view.height / 2 - 64;
+	gameOverScene.addChild(message);
+
+	move(explorer, 5);
+
+	state = play;
+
+	app.ticker.add(function(delta){
+		gameLoop(delta);
+	});
+}
+
+function gameLoop(delta) {
+	state(delta);
+}
+
+function play(delta) {
+	//Move the explorer and contain it inside the dungeon
+	//Move the blob monsters
+	//Check for a collision between the blobs and the explorer
+	//Check for a collision between the explorer and the treasure
+	//Check for a collision between the treasure and the door
+	//Decide whether the game has been won or lost
+	//Change the game `state` to `end` when the game is finsihed
+
+	explorer.x += explorer.vx;
+	explorer.y += explorer.vy;
+
+	contain(explorer, {x: 28, y: 10, width: 488, height: 480});
+
+	let explorerHit = false;
+
+	blobs.forEach(function(blob) {
+		blob.y += blob.vy;
+		let blobHitsWall = contain(blob, {x: 28, y: 10, width: 488, height: 480});
+		if (blobHitsWall === "top" || blobHitsWall === "bottom") {
+		  blob.vy *= -1;
+		}
+		if(hitTestRectangle(explorer, blob)) {
+		  explorerHit = true;
+		}
+	});
+
+	if(explorerHit) {
+		explorer.alpha = 0.5;
+		healthBar.outer.width -= 1;
+	} else {
+		explorer.alpha = 1;
+	}
+
+	if (hitTestRectangle(explorer, treasure)) {
+		treasure.x = explorer.x + 8;
+		treasure.y = explorer.y + 8;
+	}
+
+	if (hitTestRectangle(treasure, door)) {
+		state = end;
+		message.text = "You won!";
+	}
+
+	if (healthBar.outer.width < 0) {
+		state = end;
+		message.text = "You lost!";
+	}
+}
+
+function end() {
+	gameScene.visible = false;
+	gameOverScene.visible = true;
+}
+
+function move(item, speed) {
+	let left = keyboard(37),
+		up = keyboard(38),
+		right = keyboard(39),
+		down = keyboard(40);
+
+	//Left
+	left.press = () => {
+		item.vx = -speed;
+		item.vy = 0;
+	};
+	left.release = () => {
+		if (!right.isDown && item.vy === 0) {
+			item.vx = 0;
+		}
+	};
+
+	//Up
+	up.press = () => {
+		item.vy = -speed;
+		item.vx = 0;
+	};
+	up.release = () => {
+		if (!down.isDown && item.vx === 0) {
+		  item.vy = 0;
+		}
+	};
+
+	//Right
+	right.press = () => {
+		item.vx = speed;
+		item.vy = 0;
+	};
+	right.release = () => {
+		if (!left.isDown && item.vy === 0) {
+		  item.vx = 0;
+		}
+	};
+
+	//Down
+	down.press = () => {
+		item.vy = speed;
+		item.vx = 0;
+	};
+	down.release = () => {
+		if (!up.isDown && item.vx === 0) {
+		  item.vy = 0;
+		}
+	};
+}
+
+</script>
+
+</body>
+</html>
