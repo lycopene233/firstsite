@@ -1,0 +1,335 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>20180715_fgo_stone</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="text/javascript" src="../../assets/js/lib//jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="../../assets/js/lib/pixi.js"></script>
+<script type="text/javascript" src="../../assets/js/pixi/helpful_functions.js"></script>
+<style>
+body { 
+    margin: 0;
+    padding: 0;
+    background: #333;
+    color: #fff;
+    font-size: 14px;
+    line-height: 15px;
+    text-align: center;
+}
+canvas { 
+    display: block;
+    margin: 0 auto;
+}
+p {
+    margin: 10px;
+}
+</style>
+</head>
+<body>
+<p>Get 50 stones ASAP by using keyboard(← →)</p>
+<script>
+
+//TODO
+//室友意见：可以再加一些不能碰的障碍物？但是我嫌烦就没装哈哈哈哈，毕竟现在都早晨6点了，好困的
+//话说fgo里咕哒子不能碰的是什么，爱豆龙娘吗w
+
+//memo
+//代码记载得特别乱，基本就是一次性了（叹气），以后有机会整理一下吧，改进空间还是很大的
+//也不知道运行在手机上是个啥效果，能不能跑得动，回头上传github试试
+//睡醒后去做镇魂沙雕游戏（住手！
+
+let Application = PIXI.Application,
+    loader = PIXI.loader,
+    resources = PIXI.loader.resources,
+    TextureCache = PIXI.utils.TextureCache,
+    Sprite = PIXI.Sprite,
+    Container = PIXI.Container,
+
+    Graphics = PIXI.Graphics,
+    Rectangle = PIXI.Rectangle,
+    Text = PIXI.Text,
+    TextStyle = PIXI.TextStyle;
+
+let app = new Application({
+	width: Math.max(10, Math.min(450, window.innerWidth)), //to do
+	height: window.innerHeight - 35,
+	antialias: true,
+	//transparent: true,
+}); 
+
+app.renderer.backgroundColor = 0xb7dcf7;
+document.body.appendChild(app.view);
+
+let viewWidth  = app.view.width, 
+    viewHeight = app.view.height;
+
+let imgJson = "../../img/pixi/fgostone/spritesheet.json";
+
+loader
+    .add(imgJson)
+    .load(setup);
+
+let id, state,
+    gameScene, gameoverScene, skyScene, playerScene, scoreScene,
+    skys, stones, parachute, gudako, scoreStone, scoreText, timeText, endText,
+    skyCnt, stoneCnt, score,
+    timer;
+
+function setup() {
+    id = resources[imgJson].textures;
+
+    gameScene = new Container();
+    app.stage.addChild(gameScene);
+
+
+    skyScene = new Container();
+    gameScene.addChild(skyScene);
+    skyScene.vy = 1;
+
+    skys = [];
+    skyCnt = 0;
+    do {
+        createSky();
+    }
+    while (skys.length < viewHeight / skys[0].height + 1)
+
+
+    stoneScene = new Container();
+    gameScene.addChild(stoneScene);
+    stoneScene.vy = 6;
+
+    stones = [];
+    stoneCnt = 0;
+    do {
+        createStone();
+    }
+    while (stones.length < viewHeight / stones[0].height + 1)
+
+
+    playerScene = new Container();
+    playerScene.x = viewWidth / 3;
+    playerScene.y = viewHeight * 0.15;
+    gameScene.addChild(playerScene);
+
+    parachute = new Sprite(id["parachute.png"]);
+    parachute.scale.set(viewWidth / parachute.width * 0.3);
+    parachute.x = parachute.width * 0.5;
+    parachute.y = parachute.height;
+    parachute.anchor.set(0.5, 1);
+    playerScene.addChild(parachute);
+
+    gudako = new Sprite(id["gudako.png"]);
+    gudako.scale.set(viewWidth / gudako.width * 0.25);
+    gudako.x = playerScene.width * 0.5;
+    gudako.y = playerScene.height * 0.9;
+    gudako.anchor.set(0.5, 0.5);
+    playerScene.addChild(gudako);
+
+    playerScene.vx = 0;
+    playerScene.vy = 0;
+    move(playerScene, 5);
+
+    let scoreTextStyle = new TextStyle({
+        fontFamily: "Arial",
+        fontSize: 18,
+        fill: "#333",
+    });
+
+    scoreScene = new Container();
+    gameScene.addChild(scoreScene);
+
+    scoreStone = new Sprite(id["stone.png"]);
+    scoreStone.x = viewWidth * 0.05;
+    scoreStone.y = viewHeight * 0.02;
+    scoreStone.width = 25;
+    scoreStone.height = 25;
+    scoreScene.addChild(scoreStone);
+
+    score = 0;
+    scoreText = new Text(score, scoreTextStyle);
+    scoreText.x = scoreStone.x + scoreStone.width * 1.25;
+    scoreText.y = viewHeight * 0.025;
+    scoreScene.addChild(scoreText);
+
+
+    timeText = new Text("0.00 s", scoreTextStyle);
+    timeText.x = viewWidth - 70;
+    timeText.y = viewHeight * 0.025;
+    gameScene.addChild(timeText);
+
+    timer = 0;
+    duration();
+
+
+    gameoverScene = new Container();
+    app.stage.addChild(gameoverScene);
+
+    let endTextStyle = new TextStyle({
+        fontFamily: "Arial",
+        fontSize: 50,
+        fill: "#333",
+    });
+
+    endText = new Text("", endTextStyle);
+    endText.x = viewWidth * 0.1;
+    endText.y = viewHeight * 0.3;
+    endText.style = {wordWrap: true, wordWrapWidth: viewWidth * 0.8, align: "center"};
+    gameoverScene.addChild(endText);
+
+    state = play;
+
+    app.ticker.add(delta => gameLoop(delta));
+}
+
+function createSky() {
+    let sky = new Sprite(id["sky.jpg"]);
+    if(viewWidth < sky.width) {
+        sky.scale.set(viewWidth / sky.width);
+    }
+    sky.y = skyCnt * sky.height;
+    skyScene.addChild(sky);
+    skys.push(sky);
+    skyCnt++;
+}
+
+function createStone(){
+    let stone = new Sprite(id["stone.png"]),
+        rowCnt = 8,
+        spacingX = 10,
+        offsetY = viewHeight;
+        
+    if(viewWidth < stone.width * rowCnt) {
+        stone.scale.set(viewWidth / stone.width / rowCnt);
+    }
+    stone.x = randomInt(spacingX, viewWidth - stone.width - spacingX);
+    stone.y = offsetY + stoneCnt * stone.height * 3;
+    stoneScene.addChild(stone);
+    stones.push(stone);
+    stoneCnt++;
+}
+
+function gameLoop(delta) {
+    state(delta);
+}
+
+function play(delta) {
+    skyScene.y -= skyScene.vy;
+    if(skys[0].height + skys[0].getGlobalPosition().y < 0) {
+        skyScene.removeChild(skys.shift());
+        createSky();
+    }
+
+    stoneScene.y -= stoneScene.vy;
+    if(stones[0].height + stones[0].getGlobalPosition().y < 0) {
+        stoneScene.removeChild(stones.shift());
+        createStone();
+    }
+
+    playerScene.x += playerScene.vx;
+    contain(playerScene, {x: 0, y: 0, width: viewWidth, height: viewHeight});
+
+    stones.forEach(function(stone) {
+        if (hitTestRectangleGlobal(gudako, stone)) {
+            if(stone.visible === true) {
+                stone.visible = false;
+                scoreText.text = ++score;
+                if(score >= 50) {
+                    state = end;
+                    endText.text = "Great!\nYou made it \n in "
+                        + timer.toFixed(2)
+                        + " seconds.";
+                    endText.scale.set(viewWidth * 0.8 / endText.width);
+                }
+            }
+        }
+    });
+}
+
+function end() {
+    gameScene.visible = false;
+    gameoverScene.visible = true;
+}
+
+function duration() {
+    let interval = 50;
+    timer += interval / 1000;
+    timeText.text = timer.toFixed(2) + " s";
+    setTimeout(duration, interval);
+}
+
+function move(item, speed) {
+    let left = keyboard(37),
+        //up = keyboard(38),
+        right = keyboard(39);
+        //down = keyboard(40);
+
+    //Left
+    left.press = () => {
+        item.vx = -speed;
+        item.vy = 0;
+        gudako.rotation = 0.1;
+        parachute.rotation = 0.1;
+    };
+    left.release = () => {
+        if (!right.isDown && item.vy === 0) {
+            item.vx = 0;
+            gudako.rotation = 0;
+            parachute.rotation = 0;
+        }
+    };
+
+    //Right
+    right.press = () => {
+        item.vx = speed;
+        item.vy = 0;
+        gudako.rotation = -0.1;
+        parachute.rotation = -0.1;
+    };
+    right.release = () => {
+        if (!left.isDown && item.vy === 0) {
+            item.vx = 0;
+            gudako.rotation = 0;
+            parachute.rotation = 0;
+        }
+    };
+}
+
+//千万不要复制粘贴下这面这段hit判定，乱透了，切记
+function hitTestRectangleGlobal(r1, r2) {
+  let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
+  hit = false;
+
+  r1.centerX = r1.getGlobalPosition().x; 
+  r1.centerY = r1.getGlobalPosition().y; 
+  r2.centerX = r2.getGlobalPosition().x + r2.width / 2; 
+  r2.centerY = r2.getGlobalPosition().y + r2.height / 2; 
+
+  r1.halfWidth = r1.width / 2;
+  r1.halfHeight = r1.height / 2;
+  r2.halfWidth = r2.width / 2;
+  r2.halfHeight = r2.height / 2;
+
+  vx = r1.centerX - r2.centerX;
+  vy = r1.centerY - r2.centerY;
+
+  combinedHalfWidths = r1.halfWidth + r2.halfWidth / 2;
+  combinedHalfHeights = r1.halfHeight - r2.height;
+
+  if (Math.abs(vx) < combinedHalfWidths) {
+    if (Math.abs(vy) < combinedHalfHeights) {
+      hit = true;
+    } else {
+      hit = false;
+    }
+  } else {
+    hit = false;
+  }
+  return hit;
+};
+
+</script>
+
+</body>
+</html>
