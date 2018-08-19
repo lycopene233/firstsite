@@ -7,7 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 .item {
-	display: inline-block;
+	float: left;
+	margin: 10px;
 	text-align: center;
 	vertical-align: top;
 }
@@ -22,23 +23,20 @@ canvas {
 </head>
 <body>
 
+<input type="file" accept='image/*' id="fileinput" hidden>
 <div class="item">
 	original image <a class="uploader" href="javascript:;">upload image</a>
 	<canvas id="original" class="uploader" width="400"></canvas>
 </div>
-<div class="item">
-	default thumbnail
-	<canvas id="thumbnail1" width="200"></canvas>
-</div>
-<div class="item">
-	mosiac thumbnail
-	<canvas id="thumbnail2" width="200"></canvas>
-</div>
-<input type="file" accept='image/*' id="fileinput" hidden>
+
+<div class="item">default thumbnail<canvas id="thumbnail1" width="200"></canvas></div>
+<div class="item">mosiac (x1) thumbnail<canvas id="thumbnail2" width="200"></canvas></div>
+<div class="item">mosiac (x4) thumbnail<canvas id="thumbnail3" width="200"></canvas></div>
+<div class="item">mosiac (x10) thumbnail<canvas id="thumbnail4" width="200"></canvas></div>
 
 <script>
-let thumbnailScale = 10; //非整数倍效果很奇怪，不过算了……懒得再改了w
-let defaultImageUrl = '../../img/study/monalisa.jpg';
+//let defaultImageUrl = 'monalisa.jpg'; //for local
+let defaultImageUrl = '../../img/study/monalisa.jpg'; //for github
 
 let showImage = (img, ...canvasIds) => {
 	canvasIds.forEach((canvasId) => {
@@ -69,7 +67,7 @@ let mosiacImage = (scale = 1, originalId, thumbnailId) => {
 	let width = imageData.width;
 	let height = imageData.height;
 	let pointX = Number.parseInt(canvasWidth / scale);
-	let pointY = Number.parseInt(pointX * height / width);
+	//let pointY = Number.parseInt(pointX * height / width);
 	let interval =  Number.parseInt(width / pointX);
 
 	let canvasHeight = canvasWidth / width * height;
@@ -107,7 +105,9 @@ let loadImage = (imgUrl) => {
 	img.src = imgUrl;
 	img.onload = () => {
 		showImage(img, 'original', 'thumbnail1');
-		mosiacImage(thumbnailScale, 'original', 'thumbnail2');
+		mosiacImage(1, 'original', 'thumbnail2');
+		mosiacImage(4, 'original', 'thumbnail3');
+		mosiacImage(10, 'original', 'thumbnail4'); //非整数倍效果很奇怪，不过算了……懒得再改了w
 	}	
 };
 
@@ -120,12 +120,12 @@ let fileInput = document.getElementById('fileinput');
 	});	
 });
 
-fileInput.addEventListener('change', function(){
+fileInput.addEventListener('change', () => {
 	var reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = (e) => {
         loadImage(e.target.result);
     };
-    reader.readAsDataURL(this.files[0]);
+    reader.readAsDataURL(fileInput.files[0]);
 });
 
 loadImage(defaultImageUrl);
