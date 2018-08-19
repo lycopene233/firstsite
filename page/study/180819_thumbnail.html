@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>20180819_thumbnail</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+.item {
+	display: inline-block;
+	text-align: center;
+	vertical-align: top;
+}
+canvas {
+	display: block;
+	margin-top: 10px;
+}
+.uploader {
+	cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="item">
+	original image <a class="uploader" href="javascript:;">upload image</a>
+	<canvas id="original" class="uploader" width="400"></canvas>
+</div>
+<div class="item">
+	default thumbnail
+	<canvas id="thumbnail1" width="200"></canvas>
+</div>
+<div class="item">
+	mosiac thumbnail
+	<canvas id="thumbnail2" width="200"></canvas>
+</div>
+<input type="file" accept='image/*' id="fileinput" hidden>
+
+<script>
+let thumbnailScale = 10; //非整数倍效果很奇怪，不过算了……懒得再改了w
+let defaultImageUrl = '/img/study/monalisa.jpg';
+
+let showImage = (img, ...canvasIds) => {
+	canvasIds.forEach((canvasId) => {
+		let canvas = document.getElementById(canvasId);
+		if(canvas === null) return false;
+		let context = canvas.getContext('2d');
+		let width = canvas.width;
+		let height = img.height / img.width * width;
+		canvas.height = height;
+		context.clearRect(0, 0, width, height);
+		context.drawImage(img, 0, 0, width, height);
+	});
+};
+
+let mosiacImage = (scale = 1, originalId, thumbnailId) => {
+	let imageData = (() => {
+		let canvas = document.getElementById(originalId);
+		let context = canvas.getContext('2d');
+		let width = canvas.width;
+		let height = canvas.height;
+		return context.getImageData(0, 0, width, height);
+	})();
+
+	let canvas = document.getElementById(thumbnailId);
+	let context = canvas.getContext('2d');
+	let canvasWidth = canvas.width;
+
+	let width = imageData.width;
+	let height = imageData.height;
+	let pointX = Number.parseInt(canvasWidth / scale);
+	let pointY = Number.parseInt(pointX * height / width);
+	let interval =  Number.parseInt(width / pointX);
+
+	let canvasHeight = canvasWidth / width * height;
+	let newImageData = context.createImageData(canvasWidth, canvasHeight);
+	let newData = newImageData.data;
+	let originalData = imageData.data;
+
+	let tempData = ((arr = []) => {
+		originalData.forEach((value, index) => {
+			let row = Math.floor(index / 4 / width);
+			if(row % interval != 0) return; 
+			if(index % (width * 4) % (interval * 4) > 3) return;
+			arr.push(value);
+		});
+		return arr;
+	})();
+
+	tempData.forEach((value, index) => {
+		let row = Math.floor(index / 4 / pointX);
+		let column = Math.floor(index / 4) % pointX;
+		let color = index % 4;
+		for(let i = scale * row; i < scale * (row + 1); i++) {
+			for(let j = scale * column; j < scale * (column + 1); j++) {
+				newData[(canvasWidth * i + j) * 4 + color] = value;
+			}
+		}
+	});
+
+	canvas.height = canvasHeight;
+	context.putImageData(newImageData, 0, 0);
+};
+ 
+let loadImage = (imgUrl) => {
+	let img = new Image();
+	img.src = imgUrl;
+	img.onload = () => {
+		showImage(img, 'original', 'thumbnail1');
+		mosiacImage(thumbnailScale, 'original', 'thumbnail2');
+	}	
+};
+
+let uploader  = document.getElementsByClassName('uploader');
+let fileInput = document.getElementById('fileinput');
+
+[...uploader].forEach((element) => {
+	element.addEventListener('click', () => {
+		fileInput.click();
+	});	
+});
+
+fileInput.addEventListener('change', function(){
+	var reader = new FileReader();
+    reader.onload = function (e) {
+        loadImage(e.target.result);
+    };
+    reader.readAsDataURL(this.files[0]);
+});
+
+loadImage(defaultImageUrl);
+
+
+</script>
+
+</body>
+</html>

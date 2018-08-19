@@ -7,6 +7,7 @@ try to create my first site on github
 
 ## study
 - [grid(css)](https://lycopene233.github.io/firstsite/page/study/180520_grid.html)
+- [mosiac thumbnail(canvas)](https://lycopene233.github.io/firstsite/page/study/180819_thumbnail.html)
 
 ## canvas pattern
 
