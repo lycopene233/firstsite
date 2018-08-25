@@ -19,6 +19,11 @@ canvas {
 .uploader {
 	cursor: pointer;
 }
+#range {
+	margin: 20px 0;
+    vertical-align: middle;
+    width: 140px;
+}
 </style>
 </head>
 <body>
@@ -29,13 +34,19 @@ canvas {
 	<canvas id="original" class="uploader" width="400"></canvas>
 </div>
 
-<div class="item">default thumbnail<canvas id="thumbnail1" width="200"></canvas></div>
-<div class="item">mosiac (x1) thumbnail<canvas id="thumbnail2" width="200"></canvas></div>
-<div class="item">mosiac (x4) thumbnail<canvas id="thumbnail3" width="200"></canvas></div>
-<div class="item">mosiac (x10) thumbnail<canvas id="thumbnail4" width="200"></canvas></div>
+<div class="item">
+	default thumbnail
+	<canvas id="thumbnail1" width="200"></canvas>
+</div>
+<div class="item">
+	mosiac (x<span id="scale_text">1</span>) thumbnail
+	<canvas id="thumbnail2" width="200"></canvas>
+	range: <input id="range" type="range" name="range" value="1" min="1" max="20">
+</div>
+
 
 <script>
-//let defaultImageUrl = 'monalisa.jpg'; //for local
+//let defaultImageUrl = 'monalisa.jpg';
 let defaultImageUrl = '../../img/study/monalisa.jpg'; //for github
 
 let showImage = (img, ...canvasIds) => {
@@ -51,7 +62,7 @@ let showImage = (img, ...canvasIds) => {
 	});
 };
 
-let mosiacImage = (scale = 1, originalId, thumbnailId) => {
+let mosiacImage = (originalId, thumbnailId, scale = 1) => {
 	let imageData = (() => {
 		let canvas = document.getElementById(originalId);
 		let context = canvas.getContext('2d');
@@ -67,8 +78,7 @@ let mosiacImage = (scale = 1, originalId, thumbnailId) => {
 	let width = imageData.width;
 	let height = imageData.height;
 	let pointX = Number.parseInt(canvasWidth / scale);
-	//let pointY = Number.parseInt(pointX * height / width);
-	let interval =  Number.parseInt(width / pointX);
+	let interval = Number.parseInt(width / pointX);
 
 	let canvasHeight = canvasWidth / width * height;
 	let newImageData = context.createImageData(canvasWidth, canvasHeight);
@@ -77,9 +87,11 @@ let mosiacImage = (scale = 1, originalId, thumbnailId) => {
 
 	let tempData = ((arr = []) => {
 		originalData.forEach((value, index) => {
-			let row = Math.floor(index / 4 / width);
-			if(row % interval != 0) return; 
-			if(index % (width * 4) % (interval * 4) > 3) return;
+			let row = Number.parseInt(index / 4 / width);
+			let column = index % (width * 4);
+			if(row % interval != 0) return;
+			if(column / (interval * 4) >= pointX) return;
+			if(column % (interval * 4) > 3) return;
 			arr.push(value);
 		});
 		return arr;
@@ -100,19 +112,25 @@ let mosiacImage = (scale = 1, originalId, thumbnailId) => {
 	context.putImageData(newImageData, 0, 0);
 };
  
-let loadImage = (imgUrl) => {
-	let img = new Image();
-	img.src = imgUrl;
+let loadImage = (imgUrl) => new Promise((resolve, reject) => {
+	const img = new Image();
 	img.onload = () => {
-		showImage(img, 'original', 'thumbnail1');
-		mosiacImage(1, 'original', 'thumbnail2');
-		mosiacImage(4, 'original', 'thumbnail3');
-		mosiacImage(10, 'original', 'thumbnail4'); //非整数倍效果很奇怪，不过算了……懒得再改了w
-	}	
-};
+		resolve(img);
+	};
+	img.onerror = function() {
+		reject(new Error('Could not load image ' + imgUrl));
+    };
+    img.src = imgUrl;
+})
+.then(img => {
+	showImage(img, 'original', 'thumbnail1');
+	mosiacImage('original', 'thumbnail2');
+});
+
 
 let uploader  = document.getElementsByClassName('uploader');
 let fileInput = document.getElementById('fileinput');
+let range     = document.getElementById('range');
 
 [...uploader].forEach((element) => {
 	element.addEventListener('click', () => {
@@ -126,7 +144,20 @@ fileInput.addEventListener('change', () => {
         loadImage(e.target.result);
     };
     reader.readAsDataURL(fileInput.files[0]);
+    changeScale();
 });
+
+range.addEventListener('change', (e) => {
+	let scale = e.target.value;
+	changeScale(scale);
+});
+
+let changeScale = (scale = 1) => {
+	let scaleText = document.getElementById("scale_text");
+	scaleText.innerHTML = scale;
+	range.value = scale;
+	mosiacImage('original', 'thumbnail2', scale);
+}
 
 loadImage(defaultImageUrl);
 
