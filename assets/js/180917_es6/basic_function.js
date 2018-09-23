@@ -91,6 +91,7 @@ function move(player, ui, itemMap, nextBlock) {
 	}
 	if(item.name === 'treasure') {
 		endGame(player);
+		return false;
 	}
 
 	player.updatePosition({
