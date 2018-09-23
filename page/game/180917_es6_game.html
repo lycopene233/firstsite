@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>20180917_es6_game</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet/less" type="text/css" href="/firstsite/assets/less/180917_es6_game.less" />
+<script src="/firstsite/assets/js/180917_es6/less.min.js"></script>
+<script src="/firstsite/assets/js/180917_es6/player.js"></script>
+<script src="/firstsite/assets/js/180917_es6/item.js"></script>
+<script src="/firstsite/assets/js/180917_es6/basic_setting.js"></script>
+<script src="/firstsite/assets/js/180917_es6/basic_function.js"></script>
+<script src="/firstsite/assets/js/180917_es6/ui.js"></script>
+</head>
+<body>
+
+<h1>FIND THE TREASURE!</h1>
+<div class="game_zone">
+	<div class="player_data">
+		hp :     <span id="hp">0</span> ｜ 
+		san :    <span id="san">0</span> ｜ 
+		food :   <span id="food">0</span> ｜ 
+		weapon : <span id='weapon'>0</span>
+	</div>
+	<p id="msg">Use keyboard or mouse to move and explore.</p>
+	<div id="block_wrap"></div>
+</div>
+	
+
+<script>
+window.addEventListener('load', function(){
+	const ui       = new UI();
+	const player   = new Player();
+	const itemMap  = createItemMap(ui.itemCntX, ui.itemCntY);
+	const typeList = createTypeList(itemMap.size);
+
+	for (let [id, position] of itemMap.entries()) {
+		let block = ui.createBlock(id, position);
+		let type  = typeList.shift();
+		let item  = createItem(ui, player, type, block, position);
+		itemMap.set(id, Object.assign(new Item(item), position));	
+	}
+
+	player.updateData();
+
+	[...ui.blockElements()].forEach((block) => {
+		block.addEventListener('click', function(){
+			move(player, ui, itemMap, this);
+		});
+	});
+
+	document.addEventListener('keyup', (e) => {
+		let nextPosition = player.getNextPosition(e);
+		let nextBlock = document.getElementById(`${nextPosition.x}-${nextPosition.y}`);
+		if(nextBlock) {
+			move(player, ui, itemMap, nextBlock);
+		}
+	});
+});
+</script>
+
+<script type="module">
+//Failed to load module script: The server responded with a non-JavaScript MIME type of "". 
+//Strict MIME type checking is enforced for module scripts per HTML spec.
+</script>
+
+</body>
+</html>

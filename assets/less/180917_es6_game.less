@@ -1,0 +1,68 @@
+@img_path: '/firstsite/img/180917_es6_icon/';
+@fontSize: 18px;
+@gameZoneMaxSize: 600px;
+
+.fontFamily() {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", YuGothic, "ヒラギノ角ゴ ProN W3", Hiragino Kaku Gothic ProN, Arial, "メイリオ", Meiryo, sans-serif;
+}
+
+body {
+	background: #333;
+	color: #fff;
+	font-size: @fontSize;
+	line-height: 1.5;
+	margin: 0;
+	text-align: center;
+	.fontFamily();
+}
+h1 {
+	font-size: 1.5 * @fontSize;
+	margin: 15px 0 5px;
+}
+#msg {
+	margin: 5px 0 15px;
+}
+#block_wrap {
+	max-width: @gameZoneMaxSize;
+	margin: 0 auto;
+	position: relative;
+
+	.block {
+		border-radius: 5px;
+		overflow: hidden;
+		._bg();
+
+		&.player:after {
+			background-image: url('@{img_path}player.png');
+			._after();
+			._bg();
+		}
+		&.unknown:after {
+			background-image: url('@{img_path}unknown.png');
+			background-color: #ccc;
+			._after();
+			._bg();
+		}
+		._bg() {
+			position: absolute;
+			background-size: 80%;
+			background-position: center;
+			background-repeat: no-repeat;
+		}
+		._after() {
+			content: '';
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;			
+		}
+	}
+}
+.player_data {
+	line-height: 50px;
+	span {
+		font-weight: bold;
+	}
+}
+
+
