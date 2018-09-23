@@ -91,7 +91,6 @@ function move(player, ui, itemMap, nextBlock) {
 	}
 	if(item.name === 'treasure') {
 		endGame(player);
-		return false;
 	}
 
 	player.updatePosition({
@@ -148,6 +147,7 @@ function move(player, ui, itemMap, nextBlock) {
 }
 
 function endGame(player){
+	if(player.canPlay === false) return false;
 	let msg = player.isAlive() ? 'YOU WIN!' : 'YOU LOST';
 	player.canPlay = false;
 	alert(msg);
