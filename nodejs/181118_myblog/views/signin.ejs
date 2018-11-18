@@ -1,0 +1,20 @@
+<%- include('header') %>
+
+<div class="ui grid">
+  <div class="four wide column"></div>
+  <div class="eight wide column">
+    <form class="ui form segment" method="post">
+      <div class="field required">
+        <label>ニックネーム</label>
+        <input placeholder="ニックネーム" type="text" name="name">
+      </div>
+      <div class="field required">
+        <label>パスワード</label>
+        <input placeholder="パスワード" type="password" name="password">
+      </div>
+      <input type="submit" class="ui button fluid" value="ログイン">
+    </form>  
+  </div>
+</div>
+
+<%- include('footer') %>
